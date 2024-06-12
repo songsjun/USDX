@@ -84,6 +84,16 @@ The blocklist is a non-upgradeable contract that maintains a list of addresses t
 yarn hardhat run --network localhost scripts/ci/event_coverage.ts
 ```
 
+- Deploy contract, <N> is 1 to 5
+```sh
+npx hardhat deploy --network sepolia --tags Prod-USDY-<N>
+```
+
+- Flatten contract
+```sh
+npx hardhat flatten {Source Contract} > {Merged file}
+```
+
 - Run Tests: `yarn test-forge`
 
 - Generate Gas Report: `yarn test-forge --gas-report`
