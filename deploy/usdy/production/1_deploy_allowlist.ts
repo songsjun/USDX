@@ -1,22 +1,25 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-import { PROD_ORACLE, PROD_GUARDIAN_USDY } from "../../mainnet_constants";
+import { KYC_REGISTRY } from "../../mainnet_constants";
 const { ethers } = require("hardhat");
 
-const deploy_usdyPricer: DeployFunction = async function (
+const deployAllowlist: DeployFunction = async function (
   hre: HardhatRuntimeEnvironment
 ) {
   const { deployments, getNamedAccounts } = hre;
+  const { save } = deployments;
   const { deployer } = await getNamedAccounts();
   const { deploy } = deployments;
+  const signers = await ethers.getSigners();
 
-  await deploy("USDY_Pricer", {
+  const guardian = signers[1];
+
+  await deploy("Allowlist", {
     from: deployer,
-    contract: "Pricer",
-    args: [PROD_GUARDIAN_USDY, PROD_GUARDIAN_USDY],
+    args: [],
     log: true,
   });
 };
 
-deploy_usdyPricer.tags = ["Prod-USDY-Pricer", "Prod-USDY-5"];
-export default deploy_usdyPricer;
+deployAllowlist.tags = ["Prod-Allowlist", "Prod-USDY-1"];
+export default deployAllowlist;

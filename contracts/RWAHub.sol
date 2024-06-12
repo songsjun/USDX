@@ -33,8 +33,7 @@ abstract contract RWAHub is IRWAHub, ReentrancyGuard, AccessControlEnumerable {
   // Pointer to Pricer
   IPricerReader public pricer;
   // Address to receive deposits
-  address public constant assetRecipient =
-    0xbDa73A0F13958ee444e0782E1768aB4B76EdaE28; // USDY - CB Deposit Address
+  address public assetRecipient;
   // Address to send redemptions
   address public assetSender;
   // Address fee recipient
@@ -93,6 +92,7 @@ abstract contract RWAHub is IRWAHub, ReentrancyGuard, AccessControlEnumerable {
     address pauser,
     address _assetSender,
     address _feeRecipient,
+    address _assetRecipient,
     uint256 _minimumDepositAmount,
     uint256 _minimumRedemptionAmount
   ) {
@@ -108,6 +108,9 @@ abstract contract RWAHub is IRWAHub, ReentrancyGuard, AccessControlEnumerable {
     if (_feeRecipient == address(0)) {
       revert FeeRecipientCannotBeZero();
     }
+    if (_assetRecipient == address(0)) {
+      revert AssetRecipientCannotBeZero();
+    }
 
     _grantRole(DEFAULT_ADMIN_ROLE, managerAdmin);
     _grantRole(MANAGER_ADMIN, managerAdmin);
@@ -120,6 +123,7 @@ abstract contract RWAHub is IRWAHub, ReentrancyGuard, AccessControlEnumerable {
     rwa = IRWALike(_rwa);
     feeRecipient = _feeRecipient;
     assetSender = _assetSender;
+    assetRecipient = _assetRecipient;
     minimumDepositAmount = _minimumDepositAmount;
     minimumRedemptionAmount = _minimumRedemptionAmount;
 
@@ -199,7 +203,7 @@ abstract contract RWAHub is IRWAHub, ReentrancyGuard, AccessControlEnumerable {
     }
   }
 
-  /**
+  /** 
    * @notice Internal claim mint helper
    *
    * @dev This function can be overriden to implement custom claiming logic
@@ -574,6 +578,20 @@ abstract contract RWAHub is IRWAHub, ReentrancyGuard, AccessControlEnumerable {
     assetSender = newAssetSender;
     emit AssetSenderSet(oldAssetSender, newAssetSender);
   }
+
+  /**
+   * @notice Admin function to set the address of `assetRecipient`
+   *
+   * @param newAssetRecipient The address of the new `assetRecipient`
+   */
+  function setAssetRecipient(
+    address newAssetRecipient
+  ) external onlyRole(MANAGER_ADMIN) {
+    address oldAssetSender = assetRecipient;
+    assetRecipient = newAssetRecipient;
+    emit AssetRecipientSet(oldAssetSender, newAssetRecipient);
+  }
+
 
   /*//////////////////////////////////////////////////////////////
                             Pause Utils

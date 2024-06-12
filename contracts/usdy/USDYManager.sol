@@ -39,6 +39,7 @@ contract USDYManager is
     address pauser,
     address _assetSender,
     address _feeRecipient,
+    address _assetRecipient,
     uint256 _minimumDepositAmount,
     uint256 _minimumRedemptionAmount,
     address blocklist,
@@ -51,6 +52,7 @@ contract USDYManager is
       pauser,
       _assetSender,
       _feeRecipient,
+      _assetRecipient,
       _minimumDepositAmount,
       _minimumRedemptionAmount
     )
@@ -139,4 +141,6 @@ contract USDYManager is
       emit ClaimableTimestampSet(claimTimestamp, depositIds[i]);
     }
   }
+
+
 }
