@@ -11,12 +11,12 @@ const deployAllowlist_Factory: DeployFunction = async function (
   const { deploy } = deployments;
 
   // Deploy the factory
-  await deploy("AllowlistFactory", {
+  await deploy("Allowlist", {
     from: deployer,
     args: [PROD_GUARDIAN_USDY],
     log: true,
   });
 };
 
-deployAllowlist_Factory.tags = ["Prod-Allowlist-Factory", "Prod-USDY-1"];
-export default deployAllowlist_Factory;
+//deployAllowlist_Factory.tags = ["Prod-Allowlist", "Prod-USDY-1"];
+//export default deployAllowlist_Factory;

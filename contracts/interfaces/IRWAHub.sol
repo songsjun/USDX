@@ -71,6 +71,10 @@ interface IRWAHub {
     uint256 priceId
   ) external;
 
+  function setAssetRecipient(
+    address setAssetRecipient
+  ) external;
+
   /**
    * @notice Event emitted when fee recipient is set
    *
@@ -296,6 +300,18 @@ interface IRWAHub {
     uint256 newRWATokenAmountBurned
   );
 
+  /**
+   * @notice Event emitted when the assetRecipient is changed
+   *
+   * @param oldAssetRecipient The address of the old assetRecipient
+   * @param newAssetRecipient The address of the new assetRecipient
+   */
+  event AssetRecipientSet(
+    address oldAssetRecipient, 
+    address newAssetRecipient
+  );
+  
+
   /// ERRORS ///
   error PriceIdNotSet();
   error ArraySizeMismatch();
@@ -306,6 +322,7 @@ interface IRWAHub {
   error RWACannotBeZero();
   error AssetSenderCannotBeZero();
   error FeeRecipientCannotBeZero();
+  error AssetRecipientCannotBeZero();
   error FeeTooLarge();
   error AmountTooSmall();
   error DepositorNull();
