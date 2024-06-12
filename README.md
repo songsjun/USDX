@@ -113,3 +113,31 @@ _Note_:
 ## VS Code
 
 CTRL+Click in Vs Code may not work due to usage of relative and absolute import paths.
+
+
+## Sepolia Testnet contracts
+
+- USDD
+
+0x12d53A905ec8A53b5809c6107044c31c44F1638d
+
+- BlockList
+
+0x06cef0673883dc63909A3b4D2a38596b670891D4
+
+- AllowList
+
+0xE13c93456c21f20246F9fA9aF6889F95c9F71d0b
+
+- SANCTIONSLIST
+
+0x32669e3CA23d50314624E5f47bedeAC483A75730
+
+- USDD Manager
+
+0x202c0195291f4a74f7F469573Fa33CCB2c84BFf3
+
+- Pricer
+
+0x70eA763e350CC7a2e43665C9345E56B71031f421
+
