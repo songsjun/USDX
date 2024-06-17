@@ -14,14 +14,20 @@ abstract contract RWAHubOffChainRedemptions is
   // To enable and disable off chain redemptions
   bool public offChainRedemptionPaused;
 
-  // Minimum off chain redemption amount
-  uint256 public minimumOffChainRedemptionAmount;
-
   // To enable and disable off chain subscriptions
   bool public offChainSubscriptionPaused;
 
+  // Minimum off chain redemption amount
+  uint256 public minimumOffChainRedemptionAmount;
+
   // Minimum off chain subscription amount
   uint256 public minimumOffChainSubscriptionAmount;
+
+  // Maximum off chain redemption amount
+  uint256 public maximumOffChainRedemptionAmount;
+
+  // Maximum off chain subscription amount
+  uint256 public maximumOffChainSubscriptionAmount;
 
   constructor(
     address _collateral,
@@ -32,7 +38,9 @@ abstract contract RWAHubOffChainRedemptions is
     address _feeRecipient,
     address _assetRecipient,
     uint256 _minimumDepositAmount,
-    uint256 _minimumRedemptionAmount
+    uint256 _minimumRedemptionAmount,
+    uint256 _maximumDepositAmount,
+    uint256 _maximumRedemptionAmount
   )
     RWAHub(
       _collateral,
@@ -43,7 +51,9 @@ abstract contract RWAHubOffChainRedemptions is
       _feeRecipient,
       _assetRecipient,
       _minimumDepositAmount,
-      _minimumRedemptionAmount
+      _minimumRedemptionAmount,
+      _maximumDepositAmount,
+      _maximumRedemptionAmount
     )
   {
     // Default to the same minimum scription amount as for On-Chain
@@ -53,6 +63,14 @@ abstract contract RWAHubOffChainRedemptions is
     // Default to the same minimum redemption amount as for On-Chain
     // redemptions.
     minimumOffChainRedemptionAmount = _minimumRedemptionAmount;
+
+    // Default to the same Maximum scription amount as for On-Chain
+    // scriptions.
+    maximumOffChainSubscriptionAmount = _maximumDepositAmount;
+
+    // Default to the same Maximum redemption amount as for On-Chain
+    // redemptions.
+    maximumOffChainRedemptionAmount = _maximumRedemptionAmount;
   }
 
   /**
@@ -68,6 +86,10 @@ abstract contract RWAHubOffChainRedemptions is
   ) external nonReentrant ifNotPaused(offChainRedemptionPaused) {
     if (amountRWATokenToRedeem < minimumOffChainRedemptionAmount) {
       revert RedemptionTooSmall();
+    }
+
+    if (amountRWATokenToRedeem > maximumOffChainRedemptionAmount) {
+      revert RedemptionTooLarge();
     }
 
     bytes32 redemptionId = bytes32(redemptionRequestCounter++);
@@ -131,20 +153,25 @@ abstract contract RWAHubOffChainRedemptions is
   )
     external
     nonReentrant
-    onlyRole(MANAGER_ADMIN)
+    onlyRole(RELAYER_ROLE)
     ifNotPaused(offChainSubscriptionPaused)
     checkRestrictions(user)
   {
-    if (amount < minimumDepositAmount) {
+    if (depositIdToDepositor[offChainDestination].user != address(0)) {
+      revert DepositProofAlreadyExists();
+    }
+    if (amount < minimumOffChainSubscriptionAmount) {
       revert DepositTooSmall();
+    }
+    if (amount > maximumOffChainRedemptionAmount) {
+      revert DepositTooLarge();
     }
 
     uint256 feesInCollateral = _getMintFees(amount);
     uint256 depositAmountAfterFee = amount - feesInCollateral;
 
     // Link the depositor to their deposit ID
-    bytes32 depositId = bytes32(subscriptionRequestCounter++);
-    depositIdToDepositor[depositId] = Depositor(
+    depositIdToDepositor[offChainDestination] = Depositor(
       user,
       depositAmountAfterFee,
       0
@@ -152,7 +179,6 @@ abstract contract RWAHubOffChainRedemptions is
 
     emit SubscriptionRequestedServicedOffChain(
       user,
-      depositId,
       amount,
       depositAmountAfterFee,
       feesInCollateral,

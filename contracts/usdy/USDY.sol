@@ -18,13 +18,11 @@ pragma solidity 0.8.16;
 import "contracts/external/openzeppelin/contracts-upgradeable/token/ERC20/ERC20PresetMinterPauserUpgradeable.sol";
 import "contracts/usdy/blocklist/BlocklistClientUpgradeable.sol";
 import "contracts/usdy/allowlist/AllowlistClientUpgradeable.sol";
-import "contracts/sanctions/SanctionsListClientUpgradeable.sol";
 
 contract USDY is
   ERC20PresetMinterPauserUpgradeable,
   BlocklistClientUpgradeable,
-  AllowlistClientUpgradeable,
-  SanctionsListClientUpgradeable
+  AllowlistClientUpgradeable
 {
   bytes32 public constant LIST_CONFIGURER_ROLE =
     keccak256("LIST_CONFIGURER_ROLE");
@@ -39,13 +37,11 @@ contract USDY is
     string memory name,
     string memory symbol,
     address blocklist,
-    address allowlist,
-    address sanctionsList
+    address allowlist
   ) public initializer {
     __ERC20PresetMinterPauser_init(name, symbol);
     __BlocklistClientInitializable_init(blocklist);
     __AllowlistClientInitializable_init(allowlist);
-    __SanctionsListClientInitializable_init(sanctionsList);
   }
 
   /**
@@ -70,16 +66,6 @@ contract USDY is
     _setAllowlist(allowlist);
   }
 
-  /**
-   * @notice Sets the sanctions list address
-   *
-   * @param sanctionsList New sanctions list address
-   */
-  function setSanctionsList(
-    address sanctionsList
-  ) external override onlyRole(LIST_CONFIGURER_ROLE) {
-    _setSanctionsList(sanctionsList);
-  }
 
   function _beforeTokenTransfer(
     address from,
@@ -92,7 +78,6 @@ contract USDY is
     // a transfer between two parties that are not `from` or `to`.
     if (from != msg.sender && to != msg.sender) {
       require(!_isBlocked(msg.sender), "USDY: 'sender' address blocked");
-      require(!_isSanctioned(msg.sender), "USDY: 'sender' address sanctioned");
       require(
         _isAllowed(msg.sender),
         "USDY: 'sender' address not on allowlist"
@@ -102,14 +87,12 @@ contract USDY is
     if (from != address(0)) {
       // If not minting
       require(!_isBlocked(from), "USDY: 'from' address blocked");
-      require(!_isSanctioned(from), "USDY: 'from' address sanctioned");
       require(_isAllowed(from), "USDY: 'from' address not on allowlist");
     }
 
     if (to != address(0)) {
       // If not burning
       require(!_isBlocked(to), "USDY: 'to' address blocked");
-      require(!_isSanctioned(to), "USDY: 'to' address sanctioned");
       require(_isAllowed(to), "USDY: 'to' address not on allowlist");
     }
   }

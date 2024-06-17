@@ -44,7 +44,6 @@ contract USDYFactory is IMulticall {
   struct USDYListData {
     address blocklist;
     address allowlist;
-    address sanctionsList;
   }
 
   bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
@@ -95,8 +94,7 @@ contract USDYFactory is IMulticall {
       name,
       ticker,
       listData.blocklist,
-      listData.allowlist,
-      listData.sanctionsList
+      listData.allowlist
     );
 
     usdyProxied.grantRole(DEFAULT_ADMIN_ROLE, guardian);
