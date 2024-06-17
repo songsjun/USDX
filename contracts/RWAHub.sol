@@ -51,6 +51,14 @@ abstract contract RWAHub is IRWAHub, ReentrancyGuard, AccessControlEnumerable {
   // Minimum amount that must be redeemed for a withdraw request
   uint256 public minimumRedemptionAmount;
 
+  /// @dev Mint/Redeem Parameters
+  // Maximum amount that can be deposited to mint the RWA token
+  // Denoted in decimals of `collateral`
+  uint256 public maximumDepositAmount;
+
+  // Maximum amount that can be redeemed for a withdraw request
+  uint256 public maximumRedemptionAmount;
+
   // Minting fee specified in basis points
   uint256 public mintFee = 0;
 
@@ -94,7 +102,9 @@ abstract contract RWAHub is IRWAHub, ReentrancyGuard, AccessControlEnumerable {
     address _feeRecipient,
     address _assetRecipient,
     uint256 _minimumDepositAmount,
-    uint256 _minimumRedemptionAmount
+    uint256 _minimumRedemptionAmount,
+    uint256 _maximumDepositAmount,
+    uint256 _maximumRedemptionAmount
   ) {
     if (_collateral == address(0)) {
       revert CollateralCannotBeZero();
@@ -126,6 +136,8 @@ abstract contract RWAHub is IRWAHub, ReentrancyGuard, AccessControlEnumerable {
     assetRecipient = _assetRecipient;
     minimumDepositAmount = _minimumDepositAmount;
     minimumRedemptionAmount = _minimumRedemptionAmount;
+    maximumDepositAmount = _maximumDepositAmount;
+    maximumRedemptionAmount = _maximumRedemptionAmount;
 
     decimalsMultiplier =
       10 **
@@ -153,6 +165,9 @@ abstract contract RWAHub is IRWAHub, ReentrancyGuard, AccessControlEnumerable {
   {
     if (amount < minimumDepositAmount) {
       revert DepositTooSmall();
+    }
+    if (amount > maximumRedemptionAmount) {
+      revert DepositTooLarge();
     }
 
     uint256 feesInCollateral = _getMintFees(amount);
@@ -246,6 +261,9 @@ abstract contract RWAHub is IRWAHub, ReentrancyGuard, AccessControlEnumerable {
     if (amount < minimumRedemptionAmount) {
       revert RedemptionTooSmall();
     }
+    if (amount > maximumRedemptionAmount) {
+      revert RedemptionTooLarge();
+    }
     bytes32 redemptionId = bytes32(redemptionRequestCounter++);
     redemptionIdToRedeemer[redemptionId] = Redeemer(msg.sender, amount, 0);
 
@@ -307,41 +325,6 @@ abstract contract RWAHub is IRWAHub, ReentrancyGuard, AccessControlEnumerable {
     }
   }
 
-  /*//////////////////////////////////////////////////////////////
-                         Relayer Functions
-  //////////////////////////////////////////////////////////////*/
-
-  /**
-   * @notice Adds a deposit proof to the contract
-   *
-   * @param txHash                The transaction hash of the deposit
-   * @param user                  The address of the user who made the deposit
-   * @param depositAmountAfterFee The amount of the deposit after fees
-   * @param feeAmount             The amount of the fees taken
-   * @param timestamp             The timestamp of the deposit
-   *
-   * @dev txHash is used as the depositId in storage
-   * @dev All amounts are in decimals of `collateral`
-   */
-  function addProof(
-    bytes32 txHash,
-    address user,
-    uint256 depositAmountAfterFee,
-    uint256 feeAmount,
-    uint256 timestamp
-  ) external override onlyRole(RELAYER_ROLE) checkRestrictions(user) {
-    if (depositIdToDepositor[txHash].user != address(0)) {
-      revert DepositProofAlreadyExists();
-    }
-    depositIdToDepositor[txHash] = Depositor(user, depositAmountAfterFee, 0);
-    emit DepositProofAdded(
-      txHash,
-      user,
-      depositAmountAfterFee,
-      feeAmount,
-      timestamp
-    );
-  }
 
   /*//////////////////////////////////////////////////////////////
                            PriceId Setters
@@ -506,6 +489,40 @@ abstract contract RWAHub is IRWAHub, ReentrancyGuard, AccessControlEnumerable {
     uint256 oldMinimumDepositAmount = minimumDepositAmount;
     minimumDepositAmount = minDepositAmount;
     emit MinimumDepositAmountSet(oldMinimumDepositAmount, minDepositAmount);
+  }
+
+  /**
+   * @notice Admin function to set the maximum amount to redeem
+   *
+   * @param _maximumRedemptionAmount The maximum amount allowed to submit a
+   *                                 redemption request
+   */
+  function setMaximumRedemptionAmount(
+      uint256 _maximumRedemptionAmount
+  ) external onlyRole(MANAGER_ADMIN) {
+      if (_maximumRedemptionAmount < BPS_DENOMINATOR) {
+          revert AmountTooSmall();
+      }
+      uint256 oldRedemptionMax = maximumRedemptionAmount;
+      maximumRedemptionAmount = _maximumRedemptionAmount;
+      emit MaximumRedemptionAmountSet(oldRedemptionMax, _maximumRedemptionAmount);
+  }
+
+  /**
+   * @notice Admin function to set the maximum amount required for a deposit
+   *
+   * @param maxDepositAmount The maximum amount allowed to submit a deposit
+   *                         request
+   */
+  function setMaximumDepositAmount(
+      uint256 maxDepositAmount
+  ) external onlyRole(MANAGER_ADMIN) {
+      if (maxDepositAmount < BPS_DENOMINATOR) {
+          revert AmountTooSmall();
+      }
+      uint256 oldMaximumDepositAmount = maximumDepositAmount;
+      maximumDepositAmount = maxDepositAmount;
+      emit MaximumDepositAmountSet(oldMaximumDepositAmount, maxDepositAmount);
   }
 
   /**

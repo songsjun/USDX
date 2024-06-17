@@ -18,13 +18,11 @@ pragma solidity 0.8.16;
 
 import "contracts/RWAHubOffChainRedemptions.sol";
 import "contracts/usdy/blocklist/BlocklistClient.sol";
-import "contracts/sanctions/SanctionsListClient.sol";
 import "contracts/interfaces/IUSDYManager.sol";
 
 contract USDYManager is
   RWAHubOffChainRedemptions,
   BlocklistClient,
-  SanctionsListClient,
   IUSDYManager
 {
   bytes32 public constant TIMESTAMP_SETTER_ROLE =
@@ -42,8 +40,9 @@ contract USDYManager is
     address _assetRecipient,
     uint256 _minimumDepositAmount,
     uint256 _minimumRedemptionAmount,
-    address blocklist,
-    address sanctionsList
+    uint256 _maximumDepositAmount,
+    uint256 _maximumRedemptionAmount,
+    address blocklist
   )
     RWAHubOffChainRedemptions(
       _collateral,
@@ -54,10 +53,11 @@ contract USDYManager is
       _feeRecipient,
       _assetRecipient,
       _minimumDepositAmount,
-      _minimumRedemptionAmount
+      _minimumRedemptionAmount,
+      _maximumDepositAmount,
+      _maximumRedemptionAmount
     )
     BlocklistClient(blocklist)
-    SanctionsListClient(sanctionsList)
   {}
 
   /**
@@ -71,9 +71,6 @@ contract USDYManager is
   function _checkRestrictions(address account) internal view override {
     if (_isBlocked(account)) {
       revert BlockedAccount();
-    }
-    if (_isSanctioned(account)) {
-      revert SanctionedAccount();
     }
   }
 
@@ -108,17 +105,6 @@ contract USDYManager is
     address blocklist
   ) external override onlyRole(MANAGER_ADMIN) {
     _setBlocklist(blocklist);
-  }
-
-  /**
-   * @notice Update sanctions list address
-   *
-   * @param sanctionsList The new sanctions list address
-   */
-  function setSanctionsList(
-    address sanctionsList
-  ) external override onlyRole(MANAGER_ADMIN) {
-    _setSanctionsList(sanctionsList);
   }
 
   /**

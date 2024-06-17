@@ -37,14 +37,6 @@ interface IRWAHub {
 
   function claimRedemption(bytes32[] calldata redemptionIds) external;
 
-  function addProof(
-    bytes32 txHash,
-    address user,
-    uint256 depositAmountAfterFee,
-    uint256 feeAmount,
-    uint256 timestamp
-  ) external;
-
   function setPriceIdForDeposits(
     bytes32[] calldata depositIds,
     uint256[] calldata priceIds
@@ -111,6 +103,28 @@ interface IRWAHub {
   event MinimumRedemptionAmountSet(
     uint256 oldRedemptionMin,
     uint256 newRedemptionMin
+  );
+
+  /**
+   * @notice Event emitted when maximum deposit amount is set
+   *
+   * @param oldMaximum Old maximum
+   * @param newMaximum New maximum
+   *
+   * @dev See inheriting contract for decimals representation
+   */
+  event MaximumDepositAmountSet(uint256 oldMaximum, uint256 newMaximum);
+
+  /**
+   * @notice Event emitted when a new redeem maximum is set.
+   *         All units are in 1e18
+   *
+   * @param oldRedemptionMax The old redeem maximum value
+   * @param newRedemptionMax The new redeem maximum value
+   */
+  event MaximumRedemptionAmountSet(
+      uint256 oldRedemptionMax,
+      uint256 newRedemptionMax
   );
 
   /**
@@ -317,6 +331,8 @@ interface IRWAHub {
   error ArraySizeMismatch();
   error DepositTooSmall();
   error RedemptionTooSmall();
+  error DepositTooLarge();
+  error RedemptionTooLarge();
   error TxnAlreadyValidated();
   error CollateralCannotBeZero();
   error RWACannotBeZero();

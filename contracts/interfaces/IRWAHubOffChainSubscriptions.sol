@@ -31,7 +31,6 @@ interface IRWAHubOffChainSubscriptions {
    * @notice Event emitted when offchain subscription request is submitted
    *
    * @param user                      The user requesting to mint
-   * @param depositId                 The depositId of the request
    * @param collateralAmountDeposited The total amount deposited
    * @param depositAmountAfterFee     The value deposited - fee
    * @param feeAmount                 The fee amount taken
@@ -41,7 +40,6 @@ interface IRWAHubOffChainSubscriptions {
    */
   event SubscriptionRequestedServicedOffChain(
     address indexed user,
-    bytes32 indexed depositId,
     uint256 collateralAmountDeposited,
     uint256 depositAmountAfterFee,
     uint256 feeAmount,
