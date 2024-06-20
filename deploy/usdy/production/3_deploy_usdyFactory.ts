@@ -9,13 +9,34 @@ const deployUSDY_Factory: DeployFunction = async function (
   const { deployments, getNamedAccounts } = hre;
   const { deployer } = await getNamedAccounts();
   const { deploy } = deployments;
+  const signers = await ethers.getSigners();
 
   // Deploy the factory
-  await deploy("USDYFactory", {
+  const USDYFactoryDeployment = await deploy("USDYFactory", {
     from: deployer,
     args: [PROD_GUARDIAN_OMMF],
     log: true,
   });
+  console.log(`USDYFactory deployed at: ${USDYFactoryDeployment.address}`);
+
+  const usdyfactoryContract = await ethers.getContractAt("USDYFactory", USDYFactoryDeployment.address);
+
+  const deploymentAllowlist = await deployments.get("Allowlist");
+  const allowlistAddress = deploymentAllowlist.address;
+
+  const deploymentAggregatorBlocklist = await deployments.get("AggregatorBlocklist");
+  const blocklistAddress = deploymentAggregatorBlocklist.address;
+
+  const name = "CMMF";;
+  const ticker = "USD Yield Token";
+  const listData = [allowlistAddress, blocklistAddress];
+
+  const tx = await usdyfactoryContract.connect(signers[0]).deployUSDY(name, ticker, listData);
+  await tx.wait();
+
+  const usdyAddress = await usdyfactoryContract.usdyProxy();
+  console.log(`USDY address:`, usdyAddress);
+
 };
 
 deployUSDY_Factory.tags = ["Prod-USDY-Factory", "Prod-USDY-3"];

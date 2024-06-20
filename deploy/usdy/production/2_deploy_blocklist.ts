@@ -34,9 +34,13 @@ const deployBlocklist: DeployFunction = async function (
   const aggregatorContract = await ethers.getContractAt("AggregatorBlocklist", aggregatorAddress);
   const blocklistContract = await ethers.getContractAt("Blocklist", blocklistAddress);
 
-  // Add Blocklist to AggregatorBlocklist
-  const tx = await aggregatorContract.connect(signers[0]).addBlocklist(blocklistAddress);
-  await tx.wait();
+  const exist = await aggregatorContract.connect(signers[0]).blocklistExists(blocklistAddress);
+
+  if (!exist) {
+    // Add Blocklist to AggregatorBlocklist
+    const tx = await aggregatorContract.connect(signers[0]).addBlocklist(blocklistAddress);
+    await tx.wait();
+  }
 
   console.log(`Blocklist deployed at: ${blocklistAddress}`);
   console.log(`AggregatorBlocklist deployed at: ${aggregatorAddress}`);
