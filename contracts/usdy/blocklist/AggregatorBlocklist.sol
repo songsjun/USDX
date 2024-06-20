@@ -11,7 +11,7 @@ import "contracts/interfaces/IAggregatorBlocklist.sol";
  */
 contract AggregatorBlocklist is Ownable2Step, IAggregatorBlocklist, IBlocklist {
     address[] public blocklists;
-    mapping(address => bool) private blocklistExists;
+    mapping(address => bool) public blocklistExists;
 
     /**
      * @notice Add a new blocklist contract to the aggregator.
