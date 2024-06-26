@@ -83,7 +83,7 @@ abstract contract RWAHubOffChainRedemptions is
   function requestRedemptionServicedOffchain(
     uint256 amountRWATokenToRedeem,
     bytes32 offChainDestination
-  ) external nonReentrant ifNotPaused(offChainRedemptionPaused) {
+  ) public virtual nonReentrant ifNotPaused(offChainRedemptionPaused) {
     if (amountRWATokenToRedeem < minimumOffChainRedemptionAmount) {
       revert RedemptionTooSmall();
     }
@@ -151,7 +151,8 @@ abstract contract RWAHubOffChainRedemptions is
     uint256 amount,
     bytes32 offChainDestination
   )
-    external
+    public
+    virtual
     nonReentrant
     onlyRole(RELAYER_ROLE)
     ifNotPaused(offChainSubscriptionPaused)
