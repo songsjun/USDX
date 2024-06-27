@@ -39,8 +39,8 @@ contract USDYManager is
   // The time interval of epoch
   uint256 public epochInterval;
 
-  mapping(address => UserOperator) depositEpochUserOperator;
-  mapping(address => UserOperator) redemptionEpochUserOperator;
+  mapping(address => UserOperator) public depositEpochUserOperator;
+  mapping(address => UserOperator) public redemptionEpochUserOperator;
 
   constructor(
     address _collateral,
@@ -172,7 +172,7 @@ contract USDYManager is
 
   function _udpateEpoch() internal {
     if (epochInterval != 0 && block.timestamp > currentEpochTimestamp + epochInterval) {
-      currentEpochTimestamp += (block.timestamp - currentEpochTimestamp) / epochInterval * epochInterval;
+      currentEpochTimestamp = block.timestamp / epochInterval * epochInterval;
     }
   }
 
@@ -224,9 +224,6 @@ contract USDYManager is
     public
     virtual
     override
-    nonReentrant
-    ifNotPaused(subscriptionPaused)
-    checkRestrictions(msg.sender)
     updateEpoch()
   {
     _checkAndUpdateDepositLimit(msg.sender, amount);
@@ -246,8 +243,6 @@ contract USDYManager is
     public
     virtual
     override
-    nonReentrant
-    ifNotPaused(redemptionPaused)
     updateEpoch()
   {
     _checkAndUpdateRedemptionLimit(msg.sender, amount);
@@ -268,8 +263,6 @@ contract USDYManager is
     public
     virtual
     override
-    nonReentrant
-    ifNotPaused(offChainRedemptionPaused)
     updateEpoch()
   {
     _checkAndUpdateRedemptionLimit(msg.sender, amountRWATokenToRedeem);
@@ -292,10 +285,6 @@ contract USDYManager is
     public
     virtual
     override
-    nonReentrant
-    onlyRole(RELAYER_ROLE)
-    ifNotPaused(offChainSubscriptionPaused)
-    checkRestrictions(user)
     updateEpoch()
   {
     _checkAndUpdateDepositLimit(user, amount);
