@@ -157,7 +157,7 @@ abstract contract RWAHub is IRWAHub, ReentrancyGuard, AccessControlEnumerable {
   function requestSubscription(
     uint256 amount
   )
-    external
+    public
     virtual
     nonReentrant
     ifNotPaused(subscriptionPaused)
@@ -257,7 +257,7 @@ abstract contract RWAHub is IRWAHub, ReentrancyGuard, AccessControlEnumerable {
    */
   function requestRedemption(
     uint256 amount
-  ) external virtual nonReentrant ifNotPaused(redemptionPaused) {
+  ) public virtual nonReentrant ifNotPaused(redemptionPaused) {
     if (amount < minimumRedemptionAmount) {
       revert RedemptionTooSmall();
     }

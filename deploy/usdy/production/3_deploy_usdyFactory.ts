@@ -29,7 +29,7 @@ const deployUSDY_Factory: DeployFunction = async function (
 
   const name = "CMMF";;
   const ticker = "USD Yield Token";
-  const listData = [allowlistAddress, blocklistAddress];
+  const listData = [blocklistAddress, allowlistAddress];
 
   const tx = await usdyfactoryContract.connect(signers[0]).deployUSDY(name, ticker, listData);
   await tx.wait();
