@@ -160,4 +160,35 @@ describe("USDYManager", function () {
     await expect(usdyManager.connect(addr1).requestRedemptionServicedOffchain(parseUnits("500", 18), hexZeroPad(hexlify(2), 32))).not.to.be.reverted;
   });
 
+  it("Should set deposit epoch limit failed if not admin", async function () {
+    const { usdy, usdyManager, admin, addr1, addr2 } = await loadFixture(deployFixture);
+    const limit = parseUnits("500", 18);
+    await expect(usdyManager.connect(addr1).setMaximumDepositAmountInEpoch(limit)).to.be.reverted;
+    await expect(usdyManager.setMaximumDepositAmountInEpoch(limit)).not.to.be.reverted;
+
+    expect(await usdyManager.maximumDepositAmountInEpoch()).to.equal(limit);
+  });
+
+  it("Should set redemption epoch limit failed if not admin", async function () {
+    const { usdy, usdyManager, admin, addr1, addr2 } = await loadFixture(deployFixture);
+    const limit = parseUnits("1000", 18);
+    await expect(usdyManager.connect(addr1).setMaximumRedemptionAmountInEpoch(limit)).to.be.reverted;
+    await expect(usdyManager.setMaximumRedemptionAmountInEpoch(limit)).not.to.be.reverted;
+
+    expect(await usdyManager.maximumRedemptionAmountInEpoch()).to.equal(limit);
+  });
+
+  it("Should set epoch interval failed if not admin", async function () {
+    const { usdy, usdyManager, admin, addr1, addr2 } = await loadFixture(deployFixture);
+    const interval = 7200;
+    await expect(usdyManager.connect(addr1).setEpochInterval(interval)).to.be.reverted;
+    await expect(usdyManager.setEpochInterval(interval)).not.to.be.reverted;
+
+    let epochtime = parseInt((await time.latest()) / interval) * interval;
+
+    expect(await usdyManager.epochInterval()).to.equal(interval);
+    expect(await usdyManager.currentEpochTimestamp()).to.equal(epochtime);
+
+  });
+
 });
