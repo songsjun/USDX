@@ -33,6 +33,10 @@ interface IUSDYManager {
     uint256 _maximumRedemptionAmountInEpoch
   ) external;
 
+  function setEpochStartTime(
+    uint256 _epochStartTime
+  ) external;
+
   function setEpochInterval(
     uint256 _epochInterval
   ) external;
@@ -73,6 +77,18 @@ interface IUSDYManager {
     uint256 newEpochRedemptionMaximum
   );
 
+
+  /**
+   * @notice Event emitted when a new epoch start time is set.
+   *
+   * @param oldEpochStartTime The old epoch start timestamp value
+   * @param newEpochStartTime The new epoch start timestamp value
+   */
+  event EpochStartTimestampSet(
+    uint256 oldEpochStartTime,
+    uint256 newEpochStartTime
+  );
+
   /**
    * @notice Event emitted when a new epoch interval is set.
    *
@@ -88,6 +104,7 @@ interface IUSDYManager {
   error MintNotYetClaimable();
   error ClaimableTimestampInPast();
   error ClaimableTimestampNotSet();
+  error EpochStartTimestampNotPast();
   error DepositAmountExceedEpochMaximum();
   error RedemptionAmountExceedEpochMaximum();
 }
