@@ -34,8 +34,8 @@ contract USDYManager is
   uint256 public maximumDepositAmountInEpoch;
   // The maximum redemption amount for each user in one epoch
   uint256 public maximumRedemptionAmountInEpoch;
-  // The current epoch start timestamp
-  uint256 public currentEpochTimestamp;
+  // The epoch start timestamp
+  uint256 public epochStartTimestamp;
   // The time interval of epoch
   uint256 public epochInterval;
 
@@ -156,28 +156,39 @@ contract USDYManager is
     emit MaximumRedemptionAmountInEpochSet(oldAmount, _maximumRedemptionAmountInEpoch);
   }
 
+  function setEpochStartTime(
+    uint256 _epochStartTime
+  ) external onlyRole(MANAGER_ADMIN) {
+    if (_epochStartTime >= block.timestamp) {
+      revert EpochStartTimestampNotPast();
+    }
+
+    uint256 oldtime = epochStartTimestamp;
+    epochStartTimestamp = _epochStartTime;
+    emit EpochStartTimestampSet(oldtime, _epochStartTime);
+  }
+
   function setEpochInterval(
     uint256 _epochInterval
   ) external onlyRole(MANAGER_ADMIN) {
     uint256 oldInterval = epochInterval;
     epochInterval = _epochInterval;
-    _udpateEpoch();
     emit EpochIntervalSet(oldInterval, _epochInterval);
   }
 
-  modifier updateEpoch() {
-    _udpateEpoch();
-    _;
-  }
-
-  function _udpateEpoch() internal {
-    if (epochInterval != 0 && block.timestamp > currentEpochTimestamp + epochInterval) {
-      currentEpochTimestamp = block.timestamp / epochInterval * epochInterval;
+  function _udpateEpoch() internal view returns (uint256) {
+    uint256 currentEpochTimestamp = 0;
+    if (epochInterval != 0 && epochStartTimestamp != 0) {
+      currentEpochTimestamp = (block.timestamp - epochStartTimestamp) / epochInterval * epochInterval;
     }
+
+    return currentEpochTimestamp;
   }
 
   function _checkAndUpdateDepositLimit(address account, uint256 amount) internal {
     if (epochInterval == 0 || maximumDepositAmountInEpoch == 0) return;
+
+    uint256 currentEpochTimestamp = _udpateEpoch();
 
     UserOperator memory operator = depositEpochUserOperator[account];
     if (currentEpochTimestamp > operator.epochTimestamp) {
@@ -194,6 +205,8 @@ contract USDYManager is
 
   function _checkAndUpdateRedemptionLimit(address account, uint256 amount) internal {
     if (epochInterval == 0 || maximumRedemptionAmountInEpoch == 0) return;
+
+    uint256 currentEpochTimestamp = _udpateEpoch();
 
     UserOperator memory operator = redemptionEpochUserOperator[account];
     if (currentEpochTimestamp > operator.epochTimestamp) {
@@ -224,7 +237,6 @@ contract USDYManager is
     public
     virtual
     override
-    updateEpoch()
   {
     _checkAndUpdateDepositLimit(msg.sender, amount);
     super.requestSubscription(amount);
@@ -243,7 +255,6 @@ contract USDYManager is
     public
     virtual
     override
-    updateEpoch()
   {
     _checkAndUpdateRedemptionLimit(msg.sender, amount);
     super.requestRedemption(amount);
@@ -263,7 +274,6 @@ contract USDYManager is
     public
     virtual
     override
-    updateEpoch()
   {
     _checkAndUpdateRedemptionLimit(msg.sender, amountRWATokenToRedeem);
     super.requestRedemptionServicedOffchain(amountRWATokenToRedeem, offChainDestination);
@@ -285,7 +295,6 @@ contract USDYManager is
     public
     virtual
     override
-    updateEpoch()
   {
     _checkAndUpdateDepositLimit(user, amount);
     super.requestSubscriptionServicedOffchain(user, amount, offChainDestination);

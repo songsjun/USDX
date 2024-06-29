@@ -107,6 +107,9 @@ describe("USDYManager", function () {
 
     await usdyManager.setMaximumDepositAmountInEpoch(parseUnits("500", 18));
     await usdyManager.setMaximumRedemptionAmountInEpoch(parseUnits("500", 18));
+
+    const now = await time.latest();
+    await usdyManager.setEpochStartTime(now - 100);
     await usdyManager.setEpochInterval(3600);
 
     await expect(usdyManager.connect(addr1).requestSubscription(parseUnits("500", 18))).not.to.be.reverted;
@@ -136,6 +139,9 @@ describe("USDYManager", function () {
 
     await usdyManager.setMaximumDepositAmountInEpoch(parseUnits("500", 18));
     await usdyManager.setMaximumRedemptionAmountInEpoch(parseUnits("500", 18));
+
+    const now = await time.latest();
+    await usdyManager.setEpochStartTime(now - 100);
     await usdyManager.setEpochInterval(3600);
 
     await usdyManager.grantRole(keccak256(Buffer.from("RELAYER_ROLE", "utf-8")), admin.address);
@@ -187,8 +193,28 @@ describe("USDYManager", function () {
     let epochtime = parseInt((await time.latest()) / interval) * interval;
 
     expect(await usdyManager.epochInterval()).to.equal(interval);
-    expect(await usdyManager.currentEpochTimestamp()).to.equal(epochtime);
 
+  });
+
+
+  it("Should set epoch start timestamp failed if not admin", async function () {
+    const { usdy, usdyManager, admin, addr1, addr2 } = await loadFixture(deployFixture);
+    const startTime = await time.latest() - 100;
+    await expect(usdyManager.connect(addr1).setEpochStartTime(startTime)).to.be.reverted;
+    await expect(usdyManager.setEpochStartTime(startTime)).not.to.be.reverted;
+
+    expect(await usdyManager.epochStartTimestamp()).to.equal(startTime);
+
+  });
+
+  it("Should set epoch start timestamp failed if set future time", async function () {
+    const { usdy, usdyManager, admin, addr1, addr2 } = await loadFixture(deployFixture);
+    const startTime = await time.latest() + 100;
+    await expect(usdyManager.setEpochStartTime(startTime)).to.be.revertedWith("EpochStartTimestampNotPast");
+
+    await expect(usdyManager.setEpochStartTime(startTime - 200))
+          .to.emit(usdyManager, "EpochStartTimestampSet")
+          .withArgs(0, startTime - 200);
   });
 
 });
