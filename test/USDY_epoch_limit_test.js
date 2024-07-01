@@ -166,6 +166,74 @@ describe("USDYManager", function () {
     await expect(usdyManager.connect(addr1).requestRedemptionServicedOffchain(parseUnits("500", 18), hexZeroPad(hexlify(2), 32))).not.to.be.reverted;
   });
 
+  it("Should request deposit/redemption failed if exceed total limit in epoch", async function () {
+    const { usdy, usdyManager, admin, addr1, addr2 } = await loadFixture(deployFixture);
+
+    await usdyManager.setMaximumDepositAmountInEpoch(parseUnits("500", 18));
+    await usdyManager.setMaximumRedemptionAmountInEpoch(parseUnits("500", 18));
+    await usdyManager.setTotalMaximumDepositAmountInEpoch(parseUnits("500", 18));
+    await usdyManager.setTotalMaximumRedemptionAmountInEpoch(parseUnits("500", 18));
+
+    const now = await time.latest();
+    await usdyManager.setEpochStartTime(now - 100);
+    await usdyManager.setEpochInterval(3600);
+
+    await expect(usdyManager.connect(addr1).requestSubscription(parseUnits("300", 18))).not.to.be.reverted;
+    await time.increase(100);
+
+    await expect(usdyManager.connect(addr2).requestSubscription(parseUnits("300", 18))).to.be.revertedWith("DepositAmountExceedEpochTotalMaximum");
+
+    await time.increase(3600);
+    await expect(usdyManager.connect(addr2).requestSubscription(parseUnits("300", 18))).not.to.be.reverted;
+
+    await usdyManager.setPriceIdForDeposits([hexZeroPad(hexlify(1), 32), hexZeroPad(hexlify(2), 32)], [1, 1]);
+    let timestamp = await time.latest();
+    await usdyManager.setClaimableTimestamp(timestamp + 1, [hexZeroPad(hexlify(1), 32), hexZeroPad(hexlify(2), 32)]);
+    await usdyManager.claimMint([hexZeroPad(hexlify(1), 32), hexZeroPad(hexlify(2), 32)]);
+
+
+    await expect(usdyManager.connect(addr1).requestRedemption(parseUnits("300", 18))).not.to.be.reverted;
+
+    await expect(usdyManager.connect(addr2).requestRedemption(parseUnits("300", 18))).to.be.revertedWith("RedemptionAmountExceedEpochTotalMaximum");
+    await time.increase(3600);
+
+    await expect(usdyManager.connect(addr2).requestRedemption(parseUnits("300", 18))).not.to.be.reverted;
+  });
+
+  it("Should request deposit/redemption offchain failed if exceed total limit in epoch", async function () {
+    const { usdy, usdyManager, admin, addr1, addr2 } = await loadFixture(deployFixture);
+
+    await usdyManager.setMaximumDepositAmountInEpoch(parseUnits("500", 18));
+    await usdyManager.setMaximumRedemptionAmountInEpoch(parseUnits("500", 18));
+    await usdyManager.setTotalMaximumDepositAmountInEpoch(parseUnits("500", 18));
+    await usdyManager.setTotalMaximumRedemptionAmountInEpoch(parseUnits("500", 18));
+
+    const now = await time.latest();
+    await usdyManager.setEpochStartTime(now - 100);
+    await usdyManager.setEpochInterval(3600);
+
+    await usdyManager.grantRole(keccak256(Buffer.from("RELAYER_ROLE", "utf-8")), admin.address);
+    await expect(usdyManager.requestSubscriptionServicedOffchain(addr1.address, parseUnits("300", 18), hexZeroPad(hexlify(1), 32))).not.to.be.reverted;
+    await time.increase(100);
+
+    await expect(usdyManager.requestSubscriptionServicedOffchain(addr2.address, parseUnits("300", 18), hexZeroPad(hexlify(2), 32))).to.be.revertedWith("DepositAmountExceedEpochTotalMaximum");
+
+    await time.increase(3600);
+    await expect(usdyManager.requestSubscriptionServicedOffchain(addr2.address, parseUnits("300", 18), hexZeroPad(hexlify(2), 32))).not.to.be.reverted;
+
+    await usdyManager.setPriceIdForDeposits([hexZeroPad(hexlify(1), 32), hexZeroPad(hexlify(2), 32)], [1, 1]);
+    let timestamp = await time.latest();
+    await usdyManager.setClaimableTimestamp(timestamp + 1, [hexZeroPad(hexlify(1), 32), hexZeroPad(hexlify(2), 32)]);
+    await usdyManager.claimMint([hexZeroPad(hexlify(1), 32), hexZeroPad(hexlify(2), 32)]);
+
+    await expect(usdyManager.connect(addr1).requestRedemptionServicedOffchain(parseUnits("300", 18), hexZeroPad(hexlify(1), 32))).not.to.be.reverted;
+
+    await expect(usdyManager.connect(addr2).requestRedemptionServicedOffchain(parseUnits("300", 18), hexZeroPad(hexlify(1), 32))).to.be.revertedWith("RedemptionAmountExceedEpochTotalMaximum");
+    await time.increase(3600);
+
+    await expect(usdyManager.connect(addr2).requestRedemptionServicedOffchain(parseUnits("300", 18), hexZeroPad(hexlify(2), 32))).not.to.be.reverted;
+  });
+
   it("Should set deposit epoch limit failed if not admin", async function () {
     const { usdy, usdyManager, admin, addr1, addr2 } = await loadFixture(deployFixture);
     const limit = parseUnits("500", 18);
@@ -215,6 +283,24 @@ describe("USDYManager", function () {
     await expect(usdyManager.setEpochStartTime(startTime - 200))
           .to.emit(usdyManager, "EpochStartTimestampSet")
           .withArgs(0, startTime - 200);
+  });
+
+  it("Should set total deposit epoch limit failed if not admin", async function () {
+    const { usdy, usdyManager, admin, addr1, addr2 } = await loadFixture(deployFixture);
+    const limit = parseUnits("500", 18);
+    await expect(usdyManager.connect(addr1).setTotalMaximumDepositAmountInEpoch(limit)).to.be.reverted;
+    await expect(usdyManager.setTotalMaximumDepositAmountInEpoch(limit)).not.to.be.reverted;
+
+    expect(await usdyManager.totalMaximumDepositAmountInEpoch()).to.equal(limit);
+  });
+
+  it("Should set redemption epoch limit failed if not admin", async function () {
+    const { usdy, usdyManager, admin, addr1, addr2 } = await loadFixture(deployFixture);
+    const limit = parseUnits("1000", 18);
+    await expect(usdyManager.connect(addr1).setTotalMaximumRedemptionAmountInEpoch(limit)).to.be.reverted;
+    await expect(usdyManager.setTotalMaximumRedemptionAmountInEpoch(limit)).not.to.be.reverted;
+
+    expect(await usdyManager.totalMaximumRedemptionAmountInEpoch()).to.equal(limit);
   });
 
 });

@@ -39,8 +39,16 @@ contract USDYManager is
   // The time interval of epoch
   uint256 public epochInterval;
 
+  // The maximum deposit amount for all users in one epoch
+  uint256 public totalMaximumDepositAmountInEpoch;
+  // The maximum redemption amount for all users in one epoch
+  uint256 public totalMaximumRedemptionAmountInEpoch;
+
   mapping(address => UserOperator) public depositEpochUserOperator;
   mapping(address => UserOperator) public redemptionEpochUserOperator;
+
+  UserOperator public totalDepositEpochOperater;
+  UserOperator public totalRedemptionEpochOperator;
 
   constructor(
     address _collateral,
@@ -176,6 +184,22 @@ contract USDYManager is
     emit EpochIntervalSet(oldInterval, _epochInterval);
   }
 
+  function setTotalMaximumDepositAmountInEpoch(
+    uint256 _totalMaximumDepositAmountInEpoch
+  ) external onlyRole(MANAGER_ADMIN) {
+    uint256 oldAmount = totalMaximumDepositAmountInEpoch;
+    totalMaximumDepositAmountInEpoch = _totalMaximumDepositAmountInEpoch;
+    emit TotalMaximumDepositAmountInEpochSet(oldAmount, _totalMaximumDepositAmountInEpoch);
+  }
+
+  function setTotalMaximumRedemptionAmountInEpoch(
+    uint256 _totalMaximumRedemptionAmountInEpoch
+  ) external onlyRole(MANAGER_ADMIN) {
+    uint256 oldAmount = totalMaximumRedemptionAmountInEpoch;
+    totalMaximumRedemptionAmountInEpoch = _totalMaximumRedemptionAmountInEpoch;
+    emit TotalMaximumDepositAmountInEpochSet(oldAmount, _totalMaximumRedemptionAmountInEpoch);
+  }
+
   function _udpateEpoch() internal view returns (uint256) {
     uint256 currentEpochTimestamp = 0;
     if (epochInterval != 0 && epochStartTimestamp != 0) {
@@ -221,6 +245,40 @@ contract USDYManager is
     redemptionEpochUserOperator[account] = operator;
   }
 
+  function _checkAndUpdateTotalDepositLimit(uint256 amount) internal {
+    if (epochInterval == 0 || totalMaximumDepositAmountInEpoch == 0) return;
+
+    uint256 currentEpochTimestamp = _udpateEpoch();
+
+    uint256 totalAmount = amount;
+    if (currentEpochTimestamp <= totalDepositEpochOperater.epochTimestamp) {
+      totalAmount += totalDepositEpochOperater.amount;
+    }
+
+    if (totalAmount > totalMaximumDepositAmountInEpoch) {
+      revert DepositAmountExceedEpochTotalMaximum();
+    }
+    totalDepositEpochOperater.epochTimestamp = currentEpochTimestamp;
+    totalDepositEpochOperater.amount = totalAmount;
+  }
+
+  function _checkAndUpdateTotalRedemptionLimit(uint256 amount) internal {
+    if (epochInterval == 0 || totalMaximumRedemptionAmountInEpoch == 0) return;
+
+    uint256 currentEpochTimestamp = _udpateEpoch();
+
+    uint256 totalAmount = amount;
+    if (currentEpochTimestamp <= totalRedemptionEpochOperator.epochTimestamp) {
+      totalAmount += totalRedemptionEpochOperator.amount;
+    }
+
+    if (totalAmount > totalMaximumRedemptionAmountInEpoch) {
+      revert RedemptionAmountExceedEpochTotalMaximum();
+    }
+    totalRedemptionEpochOperator.epochTimestamp = currentEpochTimestamp;
+    totalRedemptionEpochOperator.amount = totalAmount;
+  }
+
 
   /*//////////////////////////////////////////////////////////////
             Override the Subscription/Redemption Functions
@@ -238,6 +296,7 @@ contract USDYManager is
     virtual
     override
   {
+    _checkAndUpdateTotalDepositLimit(amount);
     _checkAndUpdateDepositLimit(msg.sender, amount);
     super.requestSubscription(amount);
   }
@@ -256,6 +315,7 @@ contract USDYManager is
     virtual
     override
   {
+    _checkAndUpdateTotalRedemptionLimit(amount);
     _checkAndUpdateRedemptionLimit(msg.sender, amount);
     super.requestRedemption(amount);
   }
@@ -275,6 +335,7 @@ contract USDYManager is
     virtual
     override
   {
+    _checkAndUpdateTotalRedemptionLimit(amountRWATokenToRedeem);
     _checkAndUpdateRedemptionLimit(msg.sender, amountRWATokenToRedeem);
     super.requestRedemptionServicedOffchain(amountRWATokenToRedeem, offChainDestination);
   }
@@ -296,6 +357,7 @@ contract USDYManager is
     virtual
     override
   {
+    _checkAndUpdateTotalDepositLimit(amount);
     _checkAndUpdateDepositLimit(user, amount);
     super.requestSubscriptionServicedOffchain(user, amount, offChainDestination);
   }

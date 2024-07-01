@@ -41,6 +41,14 @@ interface IUSDYManager {
     uint256 _epochInterval
   ) external;
 
+  function setTotalMaximumDepositAmountInEpoch(
+    uint256 _totalMaximumDepositAmountInEpoch
+  ) external;
+
+  function setTotalMaximumRedemptionAmountInEpoch(
+    uint256 _totalMaximumRedemptionAmountInEpoch
+  ) external;
+
   /**
    * @notice Event emitted when claimable timestamp is set
    *
@@ -57,8 +65,8 @@ interface IUSDYManager {
    * @notice Event emitted when a new epoch deposit maximum is set.
    *         All units are in 1e18
    *
-   * @param oldEpochDepositMaximum The old deposit maximum value
-   * @param newEpochDepositMaximum The new deposit maximum value
+   * @param oldEpochDepositMaximum The old deposit maximum value for each user
+   * @param newEpochDepositMaximum The new deposit maximum value for each user
    */
   event MaximumDepositAmountInEpochSet(
     uint256 oldEpochDepositMaximum,
@@ -69,8 +77,8 @@ interface IUSDYManager {
    * @notice Event emitted when a new epoch redemption maximum is set.
    *         All units are in 1e18
    *
-   * @param oldEpochRedemptionMaximum The old redemption maximum value
-   * @param newEpochRedemptionMaximum The new redemption maximum value
+   * @param oldEpochRedemptionMaximum The old redemption maximum value for each user
+   * @param newEpochRedemptionMaximum The new redemption maximum value for each user
    */
   event MaximumRedemptionAmountInEpochSet(
     uint256 oldEpochRedemptionMaximum,
@@ -100,6 +108,30 @@ interface IUSDYManager {
     uint256 newEpochInterval
   );
 
+  /**
+   * @notice Event emitted when a new epoch total deposit maximum is set.
+   *         All units are in 1e18
+   *
+   * @param oldTotalEpochDepositMaximum The old total deposit maximum value
+   * @param newTotalEpochDepositMaximum The new total deposit maximum value
+   */
+  event TotalMaximumDepositAmountInEpochSet(
+    uint256 oldTotalEpochDepositMaximum,
+    uint256 newTotalEpochDepositMaximum
+  );
+
+  /**
+   * @notice Event emitted when a new epoch total redemption maximum is set.
+   *         All units are in 1e18
+   *
+   * @param oldTotalEpochRedemptionMaximum The old total redemption maximum value
+   * @param newTotalEpochRedemptionMaximum The new total redemption maximum value
+   */
+  event TotalMaximumRedemptionAmountInEpochSet(
+    uint256 oldTotalEpochRedemptionMaximum,
+    uint256 newTotalEpochRedemptionMaximum
+  );
+
   /// ERRORS ///
   error MintNotYetClaimable();
   error ClaimableTimestampInPast();
@@ -107,4 +139,6 @@ interface IUSDYManager {
   error EpochStartTimestampNotPast();
   error DepositAmountExceedEpochMaximum();
   error RedemptionAmountExceedEpochMaximum();
+  error DepositAmountExceedEpochTotalMaximum();
+  error RedemptionAmountExceedEpochTotalMaximum();
 }
